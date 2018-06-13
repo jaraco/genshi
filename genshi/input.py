@@ -17,9 +17,11 @@ sources.
 
 from itertools import chain
 import codecs
-import htmlentitydefs as entities
-import HTMLParser as html
 from xml.parsers import expat
+
+import six
+from six.moves import html_entities as entities
+from six.moves import html_parser as html
 
 from genshi.core import Attrs, QName, Stream, stripentities
 from genshi.core import START, END, XML_DECL, DOCTYPE, TEXT, START_NS, \
@@ -33,7 +35,7 @@ __docformat__ = 'restructuredtext en'
 
 def ET(element):
     """Convert a given ElementTree element to a markup stream.
-    
+
     :param element: an ElementTree element
     :return: a markup stream
     """
@@ -59,7 +61,7 @@ class ParseError(Exception):
 
     def __init__(self, message, filename=None, lineno=-1, offset=-1):
         """Exception initializer.
-        
+
         :param message: the error message from the parser
         :param filename: the path to the file that was parsed
         :param lineno: the number of the line on which the error was encountered
@@ -77,9 +79,9 @@ class ParseError(Exception):
 class XMLParser(object):
     """Generator-based XML parser based on roughly equivalent code in
     Kid/ElementTree.
-    
+
     The parsing is initiated by iterating over the parser object:
-    
+
     >>> parser = XMLParser(StringIO('<root id="2"><child>Foo</child></root>'))
     >>> for kind, data, pos in parser:
     ...     print('%s %s' % (kind, data))
@@ -96,7 +98,7 @@ class XMLParser(object):
 
     def __init__(self, source, filename=None, encoding=None):
         """Initialize the parser for the given XML input.
-        
+
         :param source: the XML text as a file-like object
         :param filename: the name of the file, if appropriate
         :param encoding: the encoding of the file; if not specified, the
@@ -139,7 +141,7 @@ class XMLParser(object):
 
     def parse(self):
         """Generator that parses the XML source, yielding markup events.
-        
+
         :return: a markup event stream
         :raises ParseError: if the XML text is not well formed
         """
@@ -164,7 +166,7 @@ class XMLParser(object):
                     self._queue = []
                     if done:
                         break
-            except expat.ExpatError, e:
+            except expat.ExpatError as e:
                 msg = str(e)
                 raise ParseError(msg, self.filename, e.lineno, e.offset)
         return Stream(_generate()).filter(_coalesce)
@@ -256,10 +258,10 @@ class XMLParser(object):
 
 def XML(text):
     """Parse the given XML source and return a markup stream.
-    
+
     Unlike with `XMLParser`, the returned stream is reusable, meaning it can be
     iterated over multiple times:
-    
+
     >>> xml = XML('<doc><elem>Foo</elem><elem>Bar</elem></doc>')
     >>> print(xml)
     <doc><elem>Foo</elem><elem>Bar</elem></doc>
@@ -267,7 +269,7 @@ def XML(text):
     <elem>Foo</elem><elem>Bar</elem>
     >>> print(xml.select('elem/text()'))
     FooBar
-    
+
     :param text: the XML source
     :return: the parsed XML event stream
     :raises ParseError: if the XML text is not well-formed
@@ -277,12 +279,12 @@ def XML(text):
 
 class HTMLParser(html.HTMLParser, object):
     """Parser for HTML input based on the Python `HTMLParser` module.
-    
+
     This class provides the same interface for generating stream events as
     `XMLParser`, and attempts to automatically balance tags.
-    
+
     The parsing is initiated by iterating over the parser object:
-    
+
     >>> parser = HTMLParser(BytesIO(u'<UL compact><LI>Foo</UL>'.encode('utf-8')), encoding='utf-8')
     >>> for kind, data, pos in parser:
     ...     print('%s %s' % (kind, data))
@@ -299,7 +301,7 @@ class HTMLParser(html.HTMLParser, object):
 
     def __init__(self, source, filename=None, encoding=None):
         """Initialize the parser for the given HTML input.
-        
+
         :param source: the HTML text as a file-like object
         :param filename: the name of the file, if known
         :param filename: encoding of the file; ignored if the input is unicode
@@ -313,7 +315,7 @@ class HTMLParser(html.HTMLParser, object):
 
     def parse(self):
         """Generator that parses the HTML source, yielding markup events.
-        
+
         :return: a markup event stream
         :raises ParseError: if the HTML text is not well formed
         """
@@ -345,7 +347,7 @@ class HTMLParser(html.HTMLParser, object):
                         for tag in open_tags:
                             yield END, QName(tag), pos
                         break
-            except html.HTMLParseError, e:
+            except html.HTMLParseError as e:
                 msg = '%s: line %d, column %d' % (e.msg, e.lineno, e.offset)
                 raise ParseError(msg, self.filename, e.lineno, e.offset)
         return Stream(_generate()).filter(_coalesce)
@@ -388,14 +390,14 @@ class HTMLParser(html.HTMLParser, object):
 
     def handle_charref(self, name):
         if name.lower().startswith('x'):
-            text = unichr(int(name[1:], 16))
+            text = six.unichr(int(name[1:], 16))
         else:
-            text = unichr(int(name))
+            text = six.unichr(int(name))
         self._enqueue(TEXT, text)
 
     def handle_entityref(self, name):
         try:
-            text = unichr(entities.name2codepoint[name])
+            text = six.unichr(entities.name2codepoint[name])
         except KeyError:
             text = '&%s;' % name
         self._enqueue(TEXT, text)
@@ -417,10 +419,10 @@ class HTMLParser(html.HTMLParser, object):
 
 def HTML(text, encoding=None):
     """Parse the given HTML source and return a markup stream.
-    
+
     Unlike with `HTMLParser`, the returned stream is reusable, meaning it can be
     iterated over multiple times:
-    
+
     >>> html = HTML('<body><h1>Foo</h1></body>', encoding='utf-8')
     >>> print(html)
     <body><h1>Foo</h1></body>
@@ -428,14 +430,14 @@ def HTML(text, encoding=None):
     <h1>Foo</h1>
     >>> print(html.select('h1/text()'))
     Foo
-    
+
     :param text: the HTML source
     :return: the parsed XML event stream
     :raises ParseError: if the HTML text is not well-formed, and error recovery
                         fails
     """
-    if isinstance(text, unicode):
-        # If it's unicode text the encoding should be set to None.
+    if isinstance(text, six.text_type):
+        # If it's text the encoding should be set to None.
         # The option to pass in an incorrect encoding is for ease
         # of writing doctests that work in both Python 2.x and 3.x.
         return Stream(list(HTMLParser(StringIO(text), encoding=None)))

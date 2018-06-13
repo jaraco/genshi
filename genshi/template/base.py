@@ -17,6 +17,8 @@ from collections import deque
 import os
 import sys
 
+import six
+
 from genshi.compat import StringIO, BytesIO
 from genshi.core import Attrs, Stream, StreamEventKind, START, TEXT, _ensure
 from genshi.input import ParseError
@@ -31,7 +33,7 @@ class TemplateError(Exception):
 
     def __init__(self, message, filename=None, lineno=-1, offset=-1):
         """Create the exception.
-        
+
         :param message: the error message
         :param filename: the filename of the template
         :param lineno: the number of line in the template at which the error
@@ -56,7 +58,7 @@ class TemplateSyntaxError(TemplateError):
 
     def __init__(self, message, filename=None, lineno=-1, offset=-1):
         """Create the exception
-        
+
         :param message: the error message
         :param filename: the filename of the template
         :param lineno: the number of line in the template at which the error
@@ -71,14 +73,14 @@ class TemplateSyntaxError(TemplateError):
 class BadDirectiveError(TemplateSyntaxError):
     """Exception raised when an unknown directive is encountered when parsing
     a template.
-    
+
     An unknown directive is any attribute using the namespace for directives,
     with a local name that doesn't match any registered directive.
     """
 
     def __init__(self, name, filename=None, lineno=-1):
         """Create the exception
-        
+
         :param name: the name of the directive
         :param filename: the filename of the template
         :param lineno: the number of line in the template at which the error
@@ -96,13 +98,13 @@ class TemplateRuntimeError(TemplateError):
 
 class Context(object):
     """Container for template input data.
-    
+
     A context provides a stack of scopes (represented by dictionaries).
-    
+
     Template directives such as loops can push a new scope on the stack with
     data that should only be available inside the loop. When the loop
     terminates, that scope can get popped off the stack again.
-    
+
     >>> ctxt = Context(one='foo', other=1)
     >>> ctxt.get('one')
     'foo'
@@ -146,7 +148,7 @@ class Context(object):
 
     def __contains__(self, key):
         """Return whether a variable exists in any of the scopes.
-        
+
         :param key: the name of the variable
         """
         return self._find(key)[1] is not None
@@ -154,7 +156,7 @@ class Context(object):
 
     def __delitem__(self, key):
         """Remove a variable from all scopes.
-        
+
         :param key: the name of the variable
         """
         for frame in self.frames:
@@ -164,7 +166,7 @@ class Context(object):
     def __getitem__(self, key):
         """Get a variables's value, starting at the current scope and going
         upward.
-        
+
         :param key: the name of the variable
         :return: the variable value
         :raises KeyError: if the requested variable wasn't found in any scope
@@ -176,14 +178,14 @@ class Context(object):
 
     def __len__(self):
         """Return the number of distinctly named variables in the context.
-        
+
         :return: the number of variables in the context
         """
         return len(self.items())
 
     def __setitem__(self, key, value):
         """Set a variable in the current scope.
-        
+
         :param key: the name of the variable
         :param value: the variable value
         """
@@ -193,7 +195,7 @@ class Context(object):
         """Retrieve a given variable's value and the frame it was found in.
 
         Intended primarily for internal use by directives.
-        
+
         :param key: the name of the variable
         :param default: the default value to return when the variable is not
                         found
@@ -206,7 +208,7 @@ class Context(object):
     def get(self, key, default=None):
         """Get a variable's value, starting at the current scope and going
         upward.
-        
+
         :param key: the name of the variable
         :param default: the default value to return when the variable is not
                         found
@@ -218,7 +220,7 @@ class Context(object):
 
     def keys(self):
         """Return the name of all variables in the context.
-        
+
         :return: a list of variable names
         """
         keys = []
@@ -229,7 +231,7 @@ class Context(object):
     def items(self):
         """Return a list of ``(name, value)`` tuples for all variables in the
         context.
-        
+
         :return: a list of variables
         """
         return [(key, self.get(key)) for key in self.keys()]
@@ -240,7 +242,7 @@ class Context(object):
 
     def push(self, data):
         """Push a new scope on the stack.
-        
+
         :param data: the data dictionary to push on the context stack.
         """
 
@@ -262,7 +264,7 @@ class Context(object):
 
 def _apply_directives(stream, directives, ctxt, vars):
     """Apply the given directives to the stream.
-    
+
     :param stream: the stream the directives should be applied to
     :param directives: the list of directives to apply
     :param ctxt: the `Context`
@@ -277,7 +279,7 @@ def _apply_directives(stream, directives, ctxt, vars):
 
 def _eval_expr(expr, ctxt, vars=None):
     """Evaluate the given `Expression` object.
-    
+
     :param expr: the expression to evaluate
     :param ctxt: the `Context`
     :param vars: additional variables that should be available to the
@@ -294,7 +296,7 @@ def _eval_expr(expr, ctxt, vars=None):
 
 def _exec_suite(suite, ctxt, vars=None):
     """Execute the given `Suite` object.
-    
+
     :param suite: the code suite to execute
     :param ctxt: the `Context`
     :param vars: additional variables that should be available to the
@@ -323,7 +325,7 @@ class DirectiveFactoryMeta(type):
 
 class DirectiveFactory(object):
     """Base for classes that provide a set of template directives.
-    
+
     :since: version 0.6
     """
     __metaclass__ = DirectiveFactoryMeta
@@ -335,7 +337,7 @@ class DirectiveFactory(object):
 
     def get_directive(self, name):
         """Return the directive class for the given name.
-        
+
         :param name: the directive name as used in the template
         :return: the directive class
         :see: `Directive`
@@ -345,10 +347,10 @@ class DirectiveFactory(object):
     def get_directive_index(self, dir_cls):
         """Return a key for the given directive class that should be used to
         sort it among other directives on the same `SUB` event.
-        
+
         The default implementation simply returns the index of the directive in
         the `directives` list.
-        
+
         :param dir_cls: the directive class
         :return: the sort key
         """
@@ -359,7 +361,7 @@ class DirectiveFactory(object):
 
 class Template(DirectiveFactory):
     """Abstract template base class.
-    
+
     This class implements most of the template processing model, but does not
     specify the syntax of templates.
     """
@@ -379,13 +381,13 @@ class Template(DirectiveFactory):
     """
 
     serializer = None
-    _number_conv = unicode # function used to convert numbers to event data
+    _number_conv = six.text_type # function used to convert numbers to event data
 
     def __init__(self, source, filepath=None, filename=None, loader=None,
                  encoding=None, lookup='strict', allow_exec=True):
         """Initialize a template from either a string, a file-like object, or
         an already parsed markup stream.
-        
+
         :param source: a string, file-like object, or markup stream to read the
                        template from
         :param filepath: the absolute path to the template file
@@ -398,7 +400,7 @@ class Template(DirectiveFactory):
                        default), "lenient", or a custom lookup class
         :param allow_exec: whether Python code blocks in templates should be
                            allowed
-        
+
         :note: Changed in 0.5: Added the `allow_exec` argument
         """
         self.filepath = filepath or filename
@@ -411,13 +413,13 @@ class Template(DirectiveFactory):
         self._prepared = False
 
         if not isinstance(source, Stream) and not hasattr(source, 'read'):
-            if isinstance(source, unicode):
+            if isinstance(source, six.text_type):
                 source = StringIO(source)
             else:
                 source = BytesIO(source)
         try:
             self._stream = self._parse(source, encoding)
-        except ParseError, e:
+        except ParseError as e:
             raise TemplateSyntaxError(e.msg, self.filepath, e.lineno, e.offset)
 
     def __getstate__(self):
@@ -457,12 +459,12 @@ class Template(DirectiveFactory):
 
     def _parse(self, source, encoding):
         """Parse the template.
-        
+
         The parsing stage parses the template and constructs a list of
         directives that will be executed in the render stage. The input is
         split up into literal output (text that does not depend on the context
         data) and directives or expressions.
-        
+
         :param source: a file-like object containing the XML source of the
                        template, or an XML event stream
         :param encoding: the encoding of the `source`
@@ -476,7 +478,7 @@ class Template(DirectiveFactory):
 
     def _prepare(self, stream, inlined):
         """Call the `attach` method of every directive found in the template.
-        
+
         :param stream: the event stream of the template
         """
         from genshi.template.loader import TemplateNotFound
@@ -502,7 +504,7 @@ class Template(DirectiveFactory):
                 if kind is INCLUDE:
                     href, cls, fallback = data
                     tmpl_inlined = False
-                    if (isinstance(href, basestring) and
+                    if (isinstance(href, six.string_types) and
                             not getattr(self.loader, 'auto_reload', True)):
                         # If the path to the included template is static, and
                         # auto-reloading is disabled on the template loader,
@@ -540,14 +542,14 @@ class Template(DirectiveFactory):
 
     def generate(self, *args, **kwargs):
         """Apply the template to the given context data.
-        
+
         Any keyword arguments are made available to the template as context
         data.
-        
+
         Only one positional argument is accepted: if it is provided, it must be
         an instance of the `Context` class, and keyword arguments are ignored.
         This calling style is used for internal processing.
-        
+
         :return: a markup event stream representing the result of applying
                  the template to the context data.
         """
@@ -601,16 +603,16 @@ class Template(DirectiveFactory):
                         # First check for a string, otherwise the iterable test
                         # below succeeds, and the string will be chopped up into
                         # individual characters
-                        if isinstance(result, basestring):
+                        if isinstance(result, six.string_types):
                             yield TEXT, result, pos
-                        elif isinstance(result, (int, float, long)):
+                        elif isinstance(result, (float,) + six.integer_types):
                             yield TEXT, number_conv(result), pos
                         elif hasattr(result, '__iter__'):
                             push(stream)
                             stream = _ensure(result)
                             break
                         else:
-                            yield TEXT, unicode(result), pos
+                            yield TEXT, six.text_type(result), pos
 
                 elif kind is SUB:
                     # This event is a list of directives and a list of nested
@@ -639,7 +641,7 @@ class Template(DirectiveFactory):
         for event in stream:
             if event[0] is INCLUDE:
                 href, cls, fallback = event[1]
-                if not isinstance(href, basestring):
+                if not isinstance(href, six.string_types):
                     parts = []
                     for subkind, subdata, subpos in self._flatten(href, ctxt,
                                                                   **vars):

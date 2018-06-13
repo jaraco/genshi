@@ -39,17 +39,17 @@ token_re = re.compile('%s|%s(?s)' % (
 
 def interpolate(text, filepath=None, lineno=-1, offset=0, lookup='strict'):
     """Parse the given string and extract expressions.
-    
+
     This function is a generator that yields `TEXT` events for literal strings,
     and `EXPR` events for expressions, depending on the results of parsing the
     string.
-    
+
     >>> for kind, data, pos in interpolate("hey ${foo}bar"):
     ...     print('%s %r' % (kind, data))
     TEXT 'hey '
     EXPR Expression('foo')
     TEXT 'bar'
-    
+
     :param text: the text to parse
     :param filepath: absolute path to the file in which the text was found
                      (optional)
@@ -77,7 +77,7 @@ def interpolate(text, filepath=None, lineno=-1, offset=0, lookup='strict'):
                     expr = Expression(chunk.strip(), pos[0], pos[1],
                                       lookup=lookup)
                     yield EXPR, expr, tuple(pos)
-                except SyntaxError, err:
+                except SyntaxError as err:
                     raise TemplateSyntaxError(err, filepath, pos[1],
                                               pos[2] + (err.offset or 0))
         else:

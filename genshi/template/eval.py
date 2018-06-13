@@ -13,10 +13,11 @@
 
 """Support for "safe" evaluation of Python expressions."""
 
-import __builtin__
-
 from textwrap import dedent
 from types import CodeType
+
+import six
+from six.moves import builtins
 
 from genshi.core import Markup
 from genshi.template.astutil import ASTTransformer, ASTCodeGenerator, \
@@ -188,7 +189,7 @@ class Suite(Code):
         """
         __traceback_hide__ = 'before_and_this'
         _globals = self._globals(data)
-        exec self.code in _globals, data
+        six.exec_(self.code, _globals, data)
 
 
 UNDEFINED = object()
@@ -325,8 +326,8 @@ class LookupBase(object):
             key = key[0]
         try:
             return obj[key]
-        except (AttributeError, KeyError, IndexError, TypeError), e:
-            if isinstance(key, basestring):
+        except (AttributeError, KeyError, IndexError, TypeError) as e:
+            if isinstance(key, six.string_types):
                 val = getattr(obj, key, UNDEFINED)
                 if val is UNDEFINED:
                     val = cls.undefined(key, owner=obj)
@@ -475,7 +476,7 @@ def _new(class_, *args, **kwargs):
     return ret
 
 
-BUILTINS = __builtin__.__dict__.copy()
+BUILTINS = builtins.__dict__.copy()
 BUILTINS.update({'Markup': Markup, 'Undefined': Undefined})
 CONSTANTS = frozenset(['False', 'True', 'None', 'NotImplemented', 'Ellipsis'])
 

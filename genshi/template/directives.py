@@ -37,18 +37,18 @@ class DirectiveMeta(type):
 
 class Directive(object):
     """Abstract base class for template directives.
-    
+
     A directive is basically a callable that takes three positional arguments:
     ``ctxt`` is the template data context, ``stream`` is an iterable over the
     events that the directive applies to, and ``directives`` is is a list of
     other directives on the same stream that need to be applied.
-    
+
     Directives can be "anonymous" or "registered". Registered directives can be
     applied by the template author using an XML attribute with the
     corresponding name in the template. Such directives should be subclasses of
     this base class that can  be instantiated with the value of the directive
     attribute as parameter.
-    
+
     Anonymous directives are simply functions conforming to the protocol
     described above, and can only be applied programmatically (for example by
     template filters).
@@ -63,7 +63,7 @@ class Directive(object):
     @classmethod
     def attach(cls, template, stream, value, namespaces, pos):
         """Called after the template stream has been completely parsed.
-        
+
         :param template: the `Template` object
         :param stream: the event stream associated with the directive
         :param value: the argument value for the directive; if the directive was
@@ -73,7 +73,7 @@ class Directive(object):
         :param namespaces: a mapping of namespace URIs to prefixes
         :param pos: a ``(filename, lineno, offset)`` tuple describing the
                     location where the directive was found in the source
-        
+
         This class method should return a ``(directive, stream)`` tuple. If
         ``directive`` is not ``None``, it should be an instance of the `Directive`
         class, and gets added to the list of directives applied to the substream
@@ -84,7 +84,7 @@ class Directive(object):
 
     def __call__(self, stream, directives, ctxt, **vars):
         """Apply the directive to the given stream.
-        
+
         :param stream: the event stream
         :param directives: a list of the remaining directives that should
                            process the stream
@@ -108,7 +108,7 @@ class Directive(object):
         try:
             return expr and Expression(expr, template.filepath, lineno,
                                        lookup=template.lookup) or None
-        except SyntaxError, err:
+        except SyntaxError as err:
             err.msg += ' in expression "%s" of "%s" directive' % (expr,
                                                                   cls.tagname)
             raise TemplateSyntaxError(err, template.filepath, lineno,
@@ -135,11 +135,11 @@ def _assignment(ast):
 
 class AttrsDirective(Directive):
     """Implementation of the ``py:attrs`` template directive.
-    
+
     The value of the ``py:attrs`` attribute should be a dictionary or a sequence
     of ``(name, value)`` tuples. The items in that dictionary or sequence are
     added as attributes to the element:
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<ul xmlns:py="http://genshi.edgewall.org/">
     ...   <li py:attrs="foo">Bar</li>
@@ -152,10 +152,10 @@ class AttrsDirective(Directive):
     <ul>
       <li class="collapse">Bar</li>
     </ul>
-    
+
     If the value evaluates to ``None`` (or any other non-truth value), no
     attributes are added:
-    
+
     >>> print(tmpl.generate(foo=None))
     <ul>
       <li>Bar</li>
@@ -188,10 +188,10 @@ class AttrsDirective(Directive):
 
 class ContentDirective(Directive):
     """Implementation of the ``py:content`` template directive.
-    
+
     This directive replaces the content of the element with the result of
     evaluating the value of the ``py:content`` attribute:
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<ul xmlns:py="http://genshi.edgewall.org/">
     ...   <li py:content="bar">Hello</li>
@@ -215,15 +215,15 @@ class ContentDirective(Directive):
 
 class DefDirective(Directive):
     """Implementation of the ``py:def`` template directive.
-    
+
     This directive can be used to create "Named Template Functions", which
     are template snippets that are not actually output during normal
     processing, but rather can be expanded from expressions in other places
     in the template.
-    
+
     A named template function can be used just like a normal Python function
     from template expressions:
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <p py:def="echo(greeting, name='world')" class="message">
@@ -237,10 +237,10 @@ class DefDirective(Directive):
         Hi, you!
       </p>
     </div>
-    
+
     If a function does not require parameters, the parenthesis can be omitted
     in the definition:
-    
+
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <p py:def="helloworld" class="message">
     ...     Hello, world!
@@ -326,7 +326,7 @@ class DefDirective(Directive):
 class ForDirective(Directive):
     """Implementation of the ``py:for`` template directive for repeating an
     element based on an iterable in the context data.
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<ul xmlns:py="http://genshi.edgewall.org/">
     ...   <li py:for="item in items">${item}</li>
@@ -378,7 +378,7 @@ class ForDirective(Directive):
 class IfDirective(Directive):
     """Implementation of the ``py:if`` template directive for conditionally
     excluding elements from being output.
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <b py:if="foo">${bar}</b>
@@ -456,10 +456,10 @@ class MatchDirective(Directive):
 
 class ReplaceDirective(Directive):
     """Implementation of the ``py:replace`` template directive.
-    
+
     This directive replaces the element with the result of evaluating the
     value of the ``py:replace`` attribute:
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <span py:replace="bar">Hello</span>
@@ -468,10 +468,10 @@ class ReplaceDirective(Directive):
     <div>
       Bye
     </div>
-    
+
     This directive is equivalent to ``py:content`` combined with ``py:strip``,
     providing a less verbose way to achieve the same effect:
-    
+
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <span py:content="bar" py:strip="">Hello</span>
     ... </div>''')
@@ -495,10 +495,10 @@ class ReplaceDirective(Directive):
 
 class StripDirective(Directive):
     """Implementation of the ``py:strip`` template directive.
-    
+
     When the value of the ``py:strip`` attribute evaluates to ``True``, the
     element is stripped from the output
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <div py:strip="True"><b>foo</b></div>
@@ -507,12 +507,12 @@ class StripDirective(Directive):
     <div>
       <b>foo</b>
     </div>
-    
+
     Leaving the attribute value empty is equivalent to a truth value.
-    
+
     This directive is particulary interesting for named template functions or
     match templates that do not generate a top-level element:
-    
+
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <div py:def="echo(what)" py:strip="">
     ...     <b>${what}</b>
@@ -543,12 +543,12 @@ class StripDirective(Directive):
 class ChooseDirective(Directive):
     """Implementation of the ``py:choose`` directive for conditionally selecting
     one of several body elements to display.
-    
+
     If the ``py:choose`` expression is empty the expressions of nested
     ``py:when`` directives are tested for truth.  The first true ``py:when``
     body is output. If no ``py:when`` directive is matched then the fallback
     directive ``py:otherwise`` will be used.
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/"
     ...   py:choose="">
@@ -560,11 +560,11 @@ class ChooseDirective(Directive):
     <div>
       <span>1</span>
     </div>
-    
+
     If the ``py:choose`` directive contains an expression, the nested
     ``py:when`` directives are tested for equality to the ``py:choose``
     expression:
-    
+
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/"
     ...   py:choose="2">
     ...   <span py:when="1">1</span>
@@ -574,7 +574,7 @@ class ChooseDirective(Directive):
     <div>
       <span>2</span>
     </div>
-    
+
     Behavior is undefined if a ``py:choose`` block contains content outside a
     ``py:when`` or ``py:otherwise`` block.  Behavior is also undefined if a
     ``py:otherwise`` occurs before ``py:when`` blocks.
@@ -601,7 +601,7 @@ class ChooseDirective(Directive):
 class WhenDirective(Directive):
     """Implementation of the ``py:when`` directive for nesting in a parent with
     the ``py:choose`` directive.
-    
+
     See the documentation of the `ChooseDirective` for usage.
     """
     __slots__ = ['filename']
@@ -647,7 +647,7 @@ class WhenDirective(Directive):
 class OtherwiseDirective(Directive):
     """Implementation of the ``py:otherwise`` directive for nesting in a parent
     with the ``py:choose`` directive.
-    
+
     See the documentation of `ChooseDirective` for usage.
     """
     __slots__ = ['filename']
@@ -672,7 +672,7 @@ class OtherwiseDirective(Directive):
 class WithDirective(Directive):
     """Implementation of the ``py:with`` template directive, which allows
     shorthand access to variables and expressions.
-    
+
     >>> from genshi.template import MarkupTemplate
     >>> tmpl = MarkupTemplate('''<div xmlns:py="http://genshi.edgewall.org/">
     ...   <span py:with="y=7; z=x+10">$x $y $z</span>
@@ -698,7 +698,7 @@ class WithDirective(Directive):
                 self.vars.append(([_assignment(n) for n in node.targets],
                                   Expression(node.value, template.filepath,
                                              lineno, lookup=template.lookup)))
-        except SyntaxError, err:
+        except SyntaxError as err:
             err.msg += ' in expression "%s" of "%s" directive' % (value,
                                                                   self.tagname)
             raise TemplateSyntaxError(err, template.filepath, lineno,
