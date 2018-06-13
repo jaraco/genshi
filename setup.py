@@ -153,7 +153,7 @@ feature is a template language, which is heavily inspired by Kid.""",
     entry_points = """
     [babel.extractors]
     genshi = genshi.filters.i18n:extract[i18n]
-    
+
     [python.templating.engines]
     genshi = genshi.template.plugin:MarkupTemplateEnginePlugin[plugin]
     genshi-markup = genshi.template.plugin:MarkupTemplateEnginePlugin[plugin]
